@@ -1,139 +1,188 @@
-index.html
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DT Driver — Solicitar Corrida</title>
+  <style>
+    :root{--bg:#0f172a;--card:#0b1220;--accent:#06b6d4;--muted:#9aa4b2;--glass: rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Arial}
+    body{margin:0;background:linear-gradient(180deg,#071024 0%, #071a2a 100%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .container{width:100%;max-width:980px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+    .logo{width:64px;height:64px;border-radius:12px;background:var(--glass);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent)}
+    h1{margin:0;font-size:20px}
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=text], input[type=tel], input[type=number], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .row{display:flex;gap:8px}
+    button{background:var(--accent);border:none;padding:10px 12px;border-radius:10px;color:#052027;font-weight:700;cursor:pointer}
+    .muted{color:var(--muted);font-size:13px}
+    .summary{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:10px}
+    .small{font-size:13px}
+    .map-placeholder{height:220px;border-radius:8px;background:linear-gradient(180deg,#021426,#04233a);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+    footer{margin-top:12px;color:var(--muted);font-size:13px}
+    @media(max-width:880px){.grid{grid-template-columns:1fr;}.logo{width:48px;height:48px}.card{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">DT</div>
+      <div>
+        <h1>DT Driver — Solicitar Corrida</h1>
+        <div class="muted">Site simples pronto para publicar no GitHub Pages</div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- FORM -->
+      <section class="card">
+        <form id="rideForm">
+          <label for="name">Nome do passageiro</label>
+          <input id="name" type="text" placeholder="Ex: João Silva" required />
+
+          <label for="phone">Telefone (para contato / WhatsApp)</label>
+          <input id="phone" type="tel" placeholder="55 21 99999-9999" />
+
+          <label for="pickup">Local de partida (endereço)</label>
+          <input id="pickup" type="text" placeholder="Rua, número, bairro, cidade" required />
+
+          <label for="dropoff">Destino (endereço)</label>
+          <input id="dropoff" type="text" placeholder="Rua, número, bairro, cidade" required />
+
+          <div style="display:flex;gap:8px;margin-top:8px;margin-bottom:8px;align-items:center">
+            <button type="button" id="useMyLocation">Usar minha localização</button>
+            <div class="muted small">(Preenche coordenadas aproximadas)</div>
+          </div>
+
+          <label for="notes">Observações</label>
+          <textarea id="notes" rows="3" placeholder="Mais bagagem, pets, preferência de motorista..."></textarea>
+
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button id="estimateBtn" type="button">Calcular valor estimado</button>
+            <button id="requestBtn" type="button">Solicitar corrida</button>
+          </div>
+
+          <div style="margin-top:12px" class="muted small">Dica: para aceitar pagamentos ou integração de notificações, adicione um backend (ex: Firebase, Node.js + Twilio/WhatsApp API).</div>
+        </form>
+      </section>
+
+      <!-- SIDEBAR: RESUMO E MAPA (PLACEHOLDER) -->
+      <aside class="card">
+        <div class="summary">
+          <div class="small muted">Resumo do pedido</div>
+          <h3 id="summaryTitle">Sem pedido</h3>
+          <div id="summaryContent" class="muted small">Preencha origem e destino e clique em "Calcular valor estimado".</div>
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="map-placeholder" id="map">
+          Mapa (placeholder)
+        </div>
+
+        <div style="height:12px"></div>
+        <div class="summary small">
+          <div><strong>Valor base:</strong> R$ <span id="base">5.00</span></div>
+          <div><strong>Preço por km:</strong> R$ <span id="perKm">2.50</span></div>
+          <div><strong>Estimativa:</strong> R$ <span id="estimate">-</span></div>
+        </div>
+
+        <div style="height:12px"></div>
+        <label for="ownerPhone" class="muted small">Número do motorista/empresa (para gerar mensagem WhatsApp)</label>
+        <input id="ownerPhone" type="tel" placeholder="55XXXXXXXXXXX" />
+      </aside>
+    </div>
+
+    <footer class="muted">Feito para você — personalize cores, tarifas e integre APIs. Deploy no GitHub: crie um repositório com esse index.html e ative GitHub Pages.</footer>
+  </div>
+
 <script>
-        // --- CONFIGURAÇÕES DE TARIFA ---
-        const TARIFA_BASE = 5.00; 
-        const TARIFA_KM = 2.50;  
-        const NUMERO_WHATSAPP = '5521999212228'; 
+// Google Maps API - requer sua chave API
+// Substitua "YOUR_GOOGLE_MAPS_API_KEY" abaixo quando adicionar o script no fim do body
 
-        let map = L.map('map').setView([-22.9068, -43.1729], 12); // Ponto inicial (Rio de Janeiro)
-        let routeLayer;
-        let ultimaEstimativa = { origem: '', destino: '', preco: 0, distancia: 0 };
+let map, directionsService, directionsRenderer;
+let state = { base: 0, perKm: 2.5, distanceKm: 0 };
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-        }).addTo(map);
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: { lat: -22.9068, lng: -43.1729 },
+    zoom: 12,
+  });
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer();
+  directionsRenderer.setMap(map);
+}
 
-        // ** ADIÇÃO CRÍTICA PARA CORRIGIR O PROBLEMA VISUAL DO MAPA **
-        // Garante que o Leaflet calcule o tamanho do mapa corretamente após o DOM estar pronto.
-        window.onload = function() {
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100); // Pequeno delay para garantir que todos os elementos CSS carregaram
-        };
-        // -----------------------------------------------------------------
+function calculateRoute() {
+  const origin = document.getElementById("pickup").value;
+  const destination = document.getElementById("dropoff").value;
 
+  if (!origin || !destination) {
+    alert("Preencha origem e destino.");
+    return;
+  }
 
-        // --- FUNÇÕES DE GEOLOCALIZAÇÃO E ROTEAMENTO ---
+  const request = {
+    origin,
+    destination,
+    travelMode: "DRIVING",
+  };
 
-        async function geocode(endereco) {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${endereco}&limit=1`);
-                const results = await response.json();
-                if (results.length > 0) {
-                    return [parseFloat(results[0].lat), parseFloat(results[0].lon)];
-                }
-                return null;
-            } catch (error) {
-                console.error("Erro ao geocodificar:", error);
-                return null;
-            }
-        }
+  directionsService.route(request, (result, status) => {
+    if (status === "OK") {
+      directionsRenderer.setDirections(result);
 
-        async function getRoute(origCoord, destCoord) {
-            // OSRM espera lon, lat
-            const url = `https://router.project-osrm.org/route/v1/driving/${origCoord[1]},${origCoord[0]};${destCoord[1]},${destCoord[0]}?overview=full&geometries=geojson`;
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
+      const distanceMeters = result.routes[0].legs[0].distance.value;
+      const km = distanceMeters / 1000;
+      state.distanceKm = km;
 
-                if (data.routes && data.routes.length > 0) {
-                    const route = data.routes[0];
-                    const distanceKM = route.distance / 1000;
-                    return { distanceKM: distanceKM, geometry: route.geometry };
-                }
-                return null;
-            } catch (error) {
-                console.error("Erro ao calcular rota OSRM:", error);
-                return null;
-            }
-        }
+      const price = (km * state.perKm).toFixed(2);
+      document.getElementById("estimate").innerText = price;
 
-        // --- FUNÇÃO PARA USAR A LOCALIZAÇÃO DO USUÁRIO ---
-        function usarMinhaLocalizacao() {
-            document.getElementById("statusResumo").innerHTML = 'Buscando sua localização...';
+      document.getElementById("summaryTitle").innerText = "Resumo da corrida";
+      document.getElementById("summaryContent").innerHTML =
+        `<strong>Origem:</strong> ${origin}<br>` +
+        `<strong>Destino:</strong> ${destination}<br>` +
+        `<strong>Distância:</strong> ${km.toFixed(2)} km<br>` +
+        `<strong>Valor estimado:</strong> R$ ${price}`;
+    } else {
+      alert("Não foi possível calcular a rota.");
+    }
+  });
+}
 
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    
-                    // Reverte as coordenadas para um endereço aproximado (Geocoder)
-                    const reverseUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-                    const response = await fetch(reverseUrl);
-                    const data = await response.json();
-                    
-                    // Tenta usar um nome de lugar decente
-                    const enderecoAprox = data.display_name || `Coordenadas: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-                    
-                    document.getElementById("origem").value = enderecoAprox;
-                    document.getElementById("statusResumo").innerHTML = 'Localização de partida preenchida!';
-                    
-                    calcularRota();
-                }, (error) => {
-                    document.getElementById("statusResumo").innerHTML = `<span style="color: #ff5252;">Erro: ${error.message}</span>. Preencha manualmente.`;
-                    console.error("Erro de geolocalização:", error);
-                });
-            } else {
-                alert("Geolocalização não é suportada pelo seu navegador.");
-            }
-        }
+document.getElementById("estimateBtn").addEventListener("click", calculateRoute);
 
-        // --- FUNÇÃO PRINCIPAL DE CÁLCULO ---
-        async function calcularRota() {
-            const origem = document.getElementById("origem").value;
-            const destino = document.getElementById("destino").value;
-            const btnSolicitar = document.getElementById("btnSolicitar");
-            const statusResumo = document.getElementById("statusResumo");
+document.getElementById("requestBtn").addEventListener("click", () => {
+  const name = document.getElementById("name").value || "-";
+  const phone = document.getElementById("phone").value || "-";
+  const pickup = document.getElementById("pickup").value;
+  const dropoff = document.getElementById("dropoff").value;
+  const notes = document.getElementById("notes").value || "-";
+  const owner = document.getElementById("ownerPhone").value.replace(/[^0-9]/g, "");
+  const price = document.getElementById("estimate").innerText;
+  const km = state.distanceKm.toFixed(2);
 
-            btnSolicitar.style.opacity = 0.5;
-            btnSolicitar.style.pointerEvents = 'none';
+  const msg = `Pedido de corrida:%0A` +
+    `Nome: ${name}%0A` +
+    `Telefone: ${phone}%0A` +
+    `Origem: ${pickup}%0A` +
+    `Destino: ${dropoff}%0A` +
+    `Distância: ${km} km%0A` +
+    `Valor estimado: R$ ${price}%0A` +
+    `Obs: ${notes}`;
 
-            if (!origem || !destino) {
-                statusResumo.className = 'resumo-erro';
-                statusResumo.innerHTML = 'Preencha origem e destino para calcular.';
-                document.getElementById("estimativaPreco").innerText = 'R$ --';
-                document.getElementById("distanciaInfo").innerText = 'Distância: 0.00 km';
-                return;
-            }
-            
-            statusResumo.className = 'resumo-info';
-            statusResumo.innerHTML = 'Calculando rota...';
+  if (owner.length >= 10) {
+    window.open(`https://wa.me/${owner}?text=${msg}`, "_blank");
+  } else {
+    alert("Informe o número do motorista para enviar pelo WhatsApp.");
+  }
+});
+</script>
 
-            const [origCoord, destCoord] = await Promise.all([
-                geocode(origem),
-                geocode(destino)
-            ]);
-
-            if (!origCoord || !destCoord) {
-                statusResumo.className = 'resumo-erro';
-                statusResumo.innerHTML = 'Ops! Um ou ambos os endereços não foram encontrados.';
-                return;
-            }
-
-            const routeData = await getRoute(origCoord, destCoord);
-
-            if (!routeData) {
-                statusResumo.className = 'resumo-erro';
-                statusResumo.innerHTML = 'Erro ao calcular a rota de carro. Tente endereços mais precisos.';
-                return;
-            }
-
-            const { distanceKM, geometry } = routeData;
-            const preco = TARIFA_BASE + (distanceKM * TARIFA_KM);
-            
-            // 1. Salva a última estimativa para o WhatsApp
-            ultimaEstimativa = { 
-                origem: origem, 
-                destino: destino, 
-                preco:
+<!-- GOOGLE MAPS API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap" async defer></script>
+</body>
+</html>
